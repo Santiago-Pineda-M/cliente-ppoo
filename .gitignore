@@ -1,0 +1,33 @@
+# Dependencias
+node_modules/
+.pnp
+.pnp.*
+
+# Build
+dist/
+dist-ssr/
+*.local
+
+# Env (no versionar valores reales; sí .env.example)
+.env
+.env.*.local
+
+# Tests / cobertura
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*

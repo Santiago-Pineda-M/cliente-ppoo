@@ -21,39 +21,33 @@ pnpm test:run          # vitest run --passWithNoTests
 
 **Orden de verificación: `pnpm lint` -> `pnpm typecheck` -> `pnpm test:run`.**
 
-## Commits
-
-Conventional Commits. Tipos: `feat`, `fix`, `refactor`, `docs`, `style`,
-`test`, `chore`, `perf`. Scopes: `domain`, `application`, `controllers`,
-`infrastructure`, `ui`, `di`, `api`, `config`.
-Formato: `feat(scope): asunto en español (max 72)`.
-
-## Arquitectura (4 capas, solo estas)
+## Arquitectura (4 capas, solo estas, sin repositorios)
 
 Dirección estricta de dependencias (una sola vía, nunca se invierte):
 
 ```
 UI (Infrastructure/UI, React)
   -> src/Controllers   (PLOCs: estado + delegan en use cases/services; PROHIBIDO fetch/storage)
-  -> src/Application   (UseCases + Services de aplicación; External/ en carpeta aparte; retornan ResultType)
-  -> src/Domain        (TS puro: entidades, VOs, ports de repos, states, Ploc base, ResultType, IUseCase)
-  -> src/Infrastructure (ApiClient fetch, repos API, services con IO, DI, hooks, UI)
+  -> src/Application   (UseCases + Services incl. I<Xxx>ApiService; External/ aparte; retornan ResultType)
+  -> src/Domain        (TS puro: entidades, VOs, states, Ploc base, ResultType, IUseCase)
+  -> src/Infrastructure (ApiClient fetch, XxxApiService por entidad, services con IO, DI, hooks, UI)
 ```
 
+- NO hay repositorios (son para persistencia local). Datos remotos vía
+  servicios API por entidad (`I<Xxx>ApiService` -> `XxxApiService` con `basePath` único).
 - Skills vinculantes en `.opencode/skills/`: `clean-architecture-client`,
   `typescript-strict`, `api-infrastructure`. Ante conflicto entre código y skill,
   manda la skill.
 - Errores con `ResultType<T, ApiErrorType>`, nunca `throw` entre capas.
-- Convención: `interface` de contrato con prefijo `I` (`IXxxRepository`,
+- Convención: `interface` de contrato con prefijo `I` (`I<Xxx>ApiService`,
   `I<Xxx>Service`, `IDependencies`); `type` con sufijo `Type`
-  (`XxxCommandType`, `XxxItemType`, `ApiErrorType`, `ResultType`).
+  (`XxxCommandType`, `XxxItemType`, `XxxDtoType`, `ApiErrorType`, `ResultType`).
+- Rutas REST SOLO en `Infrastructure/Api/<Entidad>/XxxApiService.ts`.
+  Application/Controllers/Domain nunca escriben URLs.
 - PLOC: extiende `Ploc<State>`; `submit()` sin parámetros; `reset()` en cleanup.
-- Repository ports en `Domain/Repositories/IXxxRepository.ts`; impl en
-  `Infrastructure/Repositories/XxxApiRepository.ts` (fetch vía `ApiClient`).
-- Services de aplicación en `Application/Services/` (`I<Xxx>Service` + impl
-  base); externos en `Application/Services/External/`; IO real en
-  `Infrastructure/Services/`.
-- UI consume PLOCs vía `useDependencies() + usePlocState()`, nunca repos ni
-  `ApiClient` directo. `VITE_API_URL` solo se lee en Infrastructure/DI/Api.
+- Auth JWT (access+refresh) + API key por sesión en `localStorage` SOLO vía
+  `SessionStoreService`. Refresh con cola single-flight en `ApiClient`.
+- UI consume PLOCs vía `useDependencies() + usePlocState()`, nunca ApiServices ni
+  `ApiClient` directo. `VITE_API_URL` solo se lee en `DI/modules/api.module.ts`.
 
 Detalle en `docs/ARCHITECTURE.md`. Decisiones en `docs/ARCHITECTURE_DECISIONS.md`.

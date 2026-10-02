@@ -4,6 +4,9 @@ Cliente web de la API: **React + TypeScript (Vite) + Clean Architecture de 4 cap
 + PLOC**. Solo arquitectura (sin reglas de negocio). Referencia estructural:
 proyecto ejemplo con `src/Domain|Application|Controllers|Infrastructure`.
 
+NO hay repositorios: son para persistencia local y aquí no hay. Todo acceso a
+datos remotos es vía **servicios API por entidad**.
+
 ## Capas y dirección de dependencias
 
 Estrictamente unidireccional, nunca se invierte:
@@ -11,37 +14,38 @@ Estrictamente unidireccional, nunca se invierte:
 ```
 UI (Infrastructure/UI, React)
   └─> src/Controllers   (PLOCs: estado + delegación en use cases/services; PROHIBIDO fetch/storage/router)
-        └─> src/Application (UseCases + Services de aplicación, sin estado, inyectan ports, retornan ResultType)
-              └─> src/Domain (TS puro: entidades, VOs, ports de repos, states, Ploc base, ResultType, IUseCase)
-src/Infrastructure         (ApiClient fetch, repos API, services con IO, DI, hooks, UI)
+        └─> src/Application (UseCases + Services incl. I<Xxx>ApiService; External/ aparte; retornan ResultType)
+              └─> src/Domain (TS puro: entidades, VOs, states, Ploc base, ResultType, IUseCase)
+src/Infrastructure         (ApiClient fetch, XxxApiService por entidad, services con IO, DI, hooks, UI)
 ```
 
 - **`src/Domain`** — TS puro, cero imports de otras capas, react o fetch.
   `IPatterns.ts` (`ResultType<T,E>`, `ApiErrorType`, `IUseCase`), `Ploc.ts`
   (`state`, `changeState`, `subscribe`, `unsubscribe`), `Entities/*Entity.ts`,
-  `ValueObjects/*`, `Repositories/IXxxRepository.ts`,
-  `States/*` (`XxxItemType` + `IXxxState` + `initialXxxState`).
-  SIN carpeta `Services/` (viven en Application).
-- **`src/Application`** — dos subcarpetas, nunca mezcladas:
+  `ValueObjects/*`, `States/*` (`XxxItemType` + `IXxxState` + `initialXxxState`).
+  SIN `Repositories/` ni `Services/`.
+- **`src/Application`** — tres grupos, nunca mezclados:
   - `UseCases/<Agregado>/<Verbo><Agregado>UseCase.ts`. Sin estado, inyecta
-    ports del Domain, retorna `Promise<ResultType<Output>>`.
-    Commands como `type XxxCommandType = {...}` junto al UC.
-  - `Services/<Xxx>Service.ts` + `Services/I<Xxx>Service.ts`. Servicios de
-    aplicación (orquestan UCs). Contratos `interface I<Xxx>Service`.
-  - `Services/External/`: envoltorios de librerías externas, en carpeta
-    aparte de `UseCases/`. El IO real vive en `Infrastructure/Services/`.
+    ports de servicios, retorna `Promise<ResultType<Output>>`. **Nunca escribe
+    URLs**: consume `I<Xxx>ApiService`. Commands como
+    `type XxxCommandType = {...}` junto al UC.
+  - `Services/I<Xxx>ApiService.ts`. Ports de datos remotos, un port por
+    entidad/recurso REST (`list|getById|create|update|remove` según la API).
+  - `Services/<Xxx>Service.ts` + `I<Xxx>Service.ts`. Servicios de aplicación.
+    `Services/External/`: envoltorios de librerías, en carpeta aparte.
 - **`src/Controllers`** — `<Agregado>/<Agregado><Rol>Ploc.ts`
   (`List|Detail|CreateForm|EditForm|Delete`). Extiende `Ploc<State>`, expone
   `load/submit/updateField/reset`. Solo importa `Domain` + `type` de
   Application (UC o `I<Xxx>Service`).
 - **`src/Infrastructure`** — implementaciones:
-  `Api/ApiClient.ts` (único `fetch`), `Repositories/XxxApiRepository.ts`
-  (`implements IXxxRepository`, JSON <-> Entity),
-  `Services/XxxService.ts` (IO real de `I<Xxx>Service`),
-  `DI/modules/*.module.ts` (singletons lazy, único `new`) ->
-  `DI/DependenciesLocator.ts` (`IDependencies`) ->
-  `Context/DependenciesProvider.tsx` + `useDependencies()`,
-  `Hooks/usePlocState.ts`, `UI/pages|components|layouts`.
+  - `Api/ApiClient.ts` (único `fetch`; auth + refresh single-flight + trazas).
+  - `Api/<Entidad>/XxxApiService.ts` (`implements I<Xxx>ApiService`, dueño de
+    la ruta con `basePath` único, JSON <-> Entity).
+  - `Services/XxxService.ts` (IO no-HTTP: `SessionStoreService` con `localStorage`).
+  - `DI/modules/*.module.ts` (singletons lazy, único `new`) ->
+    `DI/DependenciesLocator.ts` (`IDependencies`) ->
+    `Context/DependenciesProvider.tsx` + `useDependencies()`,
+    `Hooks/usePlocState.ts`, `UI/pages|components|layouts`.
 
 ## PLOC (patrón)
 
@@ -54,14 +58,29 @@ src/Infrastructure         (ApiClient fetch, repos API, services con IO, DI, hoo
 - UI: `useDependencies() + usePlocState(ploc)` +
   `useEffect(() => { ploc.load(); return () => ploc.reset(); }, [ploc])`.
 
-## Flujo de datos (ejemplo lista)
+## Flujo de datos (ejemplo lista, sin repositorios)
 
 ```
-UI --load()--> XListPloc --execute()--> GetXListUseCase --findAll()-->
-IXxxRepository --request()--> XxxApiRepository/ApiClient --> API
+UI --load()--> XListPloc --execute()--> GetXListUseCase --list()-->
+I<Xxx>ApiService --request()--> XxxApiService/ApiClient --> API REST
 API --> JSON --> fromPersistence() --> Entity --> toItem() --> XxxItemType
 --> changeState({ items }) --> usePlocState --> render
 ```
+
+## Auth (JWT access+refresh + API key por sesión)
+
+- `SessionEntity` (Domain) + `IAuthApiService` (`login|refresh`) +
+  `Login|RefreshSession|LogoutUseCase` + `AuthPloc` (`IAuthState`).
+- Sesión en `localStorage` SOLO vía `SessionStoreService`.
+- Un solo `ApiClient`: adjunta `Authorization` + `X-API-Key` salvo `auth:false`.
+  401 => refresh con cola single-flight => reintento único => si falla, logout.
+- Tokens y key enmascarados en trazas y nunca en estado React.
+
+## Trazas HTTP (drawer colapsable)
+
+- `ApiClient` emite `HttpTraceInputType` al sink (duración incluida).
+- `HttpTraceService` (ring buffer 100, enmascara sensibles) + `HttpTraceListPloc`
+  (`isOpen|traces|selectedId`, `toggle/select/clear`) + drawer en `MainLayout`.
 
 ## Estructuras clave (plantillas)
 
@@ -92,30 +111,21 @@ export class XxxEntity {
   toItem(): XxxItemType { return { ...this.props } as unknown as XxxItemType }
 }
 
-// Domain/Repositories/IXxxRepository.ts
-export interface IXxxRepository {
-  save(e: XxxEntity): Promise<ResultType<void>>; findById(id: string): Promise<ResultType<XxxEntity | null>>;
-  findAll(): Promise<ResultType<XxxEntity[]>>; delete(id: string): Promise<ResultType<void>>; count(): Promise<ResultType<number>>;
+// Application/Services/I<Xxx>ApiService.ts (port, dueño lógico del recurso)
+export interface IXxxApiService {
+  list(): Promise<ResultType<XxxEntity[]>>;
+  getById(id: string): Promise<ResultType<XxxEntity | null>>;
 }
 
-// Application (UseCases + Services)
-export type CreateXxxCommandType = { [k: string]: unknown };
-export class CreateXxxUseCase implements IUseCase<CreateXxxCommandType, XxxEntity> {
-  constructor(private repo: IXxxRepository) {}
-  async execute(c: CreateXxxCommandType): Promise<ResultType<XxxEntity>> { return undefined as never }
-}
-export interface IXxxService { run(input: unknown): Promise<ResultType<void>> }
-
-// Controllers
-export class XxxListPloc extends Ploc<IXxxListState> {
-  constructor(private uc: GetXxxListUseCase) { super(initialXxxListState) }
-  async load(): Promise<void> { /* execute -> ok: toItem(), err: errors */ }
-  reset(): void { this.changeState(initialXxxListState) }
+// Infrastructure/Api/<Entidad>/XxxApiService.ts (dueño físico de la ruta)
+export class XxxApiService implements IXxxApiService {
+  constructor(private readonly api: ApiClient, private readonly basePath = '/xxx') {}
+  // list() => this.api.get<XxxDtoType[]>(this.basePath) -> fromPersistence
 }
 
-// Infrastructure DI (plantilla por feature)
-let repo: IXxxRepository | null = null;
-function getRepo(): IXxxRepository { if (!repo) repo = new XxxApiRepository(getApiClient()); return repo }
+// Infrastructure DI (plantilla por entidad)
+let api: IXxxApiService | null = null;
+function getXxxApi(): IXxxApiService { if (!api) api = new XxxApiService(getApiClient()); return api }
 // igual para UCs, services y PLOCs (lazy singleton), exportando getXxx*Ploc()
 
 // Infrastructure Hooks
@@ -125,13 +135,13 @@ export function usePlocState<S>(ploc: Ploc<S>): S { /* useState + subscribe/unsu
 ## Nombres y convenciones
 
 - `interface` de contrato => prefijo `I`: `IUseCase`, `IPlocState`,
-  `IXxxRepository`, `I<Xxx>Service`, `IDependencies`, `IApiClient`.
+  `I<Xxx>ApiService`, `I<Xxx>Service`, `IDependencies`, `IApiClient`.
   Si una carpeta solo contiene interfaces, todo archivo lleva `I`.
-- `type` alias => sufijo `Type`: `XxxCommandType`, `XxxItemType`,
+- `type` alias => sufijo `Type`: `XxxCommandType`, `XxxItemType`, `XxxDtoType`,
   `XxxPropsType`, `XxxFormDataType`, `ApiErrorType`, `ResultType<T>`.
 - Clases concretas => sin `I` ni `Type`: `XxxEntity`, `GetXListUseCase`,
-  `XxxListPloc`, `ApiClient`, `XxxApiRepository`.
-- Archivos: `XxxEntity.ts`, `IXxxRepository.ts`, `I<Xxx>Service.ts`,
+  `XxxListPloc`, `ApiClient`, `XxxApiService`.
+- Archivos: `XxxEntity.ts`, `I<Xxx>ApiService.ts`, `I<Xxx>Service.ts`,
   `xxx.states.ts`, `<Verbo><Xxx>UseCase.ts`, `<Xxx><Rol>Ploc.ts` (Pascal),
   `xxx.module.ts`, `useXxx.ts` (camel). Alias `@/*` a `./src/*`.
   Barriles `index.ts` por carpeta, `import type` para tipos.

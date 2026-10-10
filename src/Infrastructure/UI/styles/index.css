@@ -1,0 +1,26 @@
+/* ============================================================
+   BASE GLOBAL — Sistema de diseño CLIENTE_PPOO.
+   Este archivo solo contiene reset + elementos raíz.
+   Todo estilo de componente vive en su `<Componente>.module.css`
+   colocado junto a su .tsx; primitivos compartidos en
+   `styles/ui.module.css`. Tokens en `styles/tokens.css`.
+   Ver docs/DESIGN_SYSTEM.md.
+   ============================================================ */
+@import './tokens.css';
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

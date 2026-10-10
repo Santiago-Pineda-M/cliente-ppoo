@@ -1,0 +1,10 @@
+/* Contenedor centrado de la composición raíz. */
+.shell {
+  max-width: var(--layout-max);
+  margin: var(--space-8) auto;
+  padding: 0 var(--space-4);
+}
+
+.shellWide {
+  max-width: var(--layout-max-wide);
+}

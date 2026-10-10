@@ -76,6 +76,18 @@ API --> JSON --> fromPersistence() --> Entity --> toItem() --> XxxItemType
   401 => refresh con cola single-flight => reintento único => si falla, logout.
 - Tokens y key enmascarados en trazas y nunca en estado React.
 
+## API relacionada (API_PPOO)
+
+- Ubicación: `../API_PPOO` (hermano de este repo; solución .NET 10 `ApiPoo2.sln`).
+- El cliente la consume en `VITE_API_URL` (ver `.env.example`; desarrollo: `http://localhost:5114/api`).
+- Arranque local: `dotnet run --project src/ApiPoo2.WebApi --launch-profile http`
+  (http `:5114`) desde la raíz de `API_PPOO`. Requiere su `.env` (claves
+  `DATABASE_URL`, `Jwt__*`, `Bootstrap__*`, `Cors__AllowedOrigins`).
+- Contrato relevante: `POST /api/bootstrap/admin` (siembra única, luego 403
+  `bootstrap.disabled`), `POST /api/auth/login` (par de tokens + apiKey),
+  errores `application/problem+json` (`status|code|message|errors|traceId`).
+- Detalle del servidor (capas, migraciones, tests): `../API_PPOO/ARCHITECTURE.md`.
+
 ## Trazas HTTP (drawer colapsable)
 
 - `ApiClient` emite `HttpTraceInputType` al sink (duración incluida).

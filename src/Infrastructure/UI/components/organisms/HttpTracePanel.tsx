@@ -1,9 +1,20 @@
 import type { HttpTraceType } from '@/Domain';
 import { useDependencies } from '@/Infrastructure/Context/DependenciesProvider';
 import { usePlocState } from '@/Infrastructure/Hooks/usePlocState';
+import styles from './HttpTracePanel.module.css';
 
-function pretty(value: unknown): string {
-  if (value === null || value === undefined) return '—';
+function isEmpty(value: unknown): boolean {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'string') return value.trim() === '';
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === 'object') return Object.keys(value).length === 0;
+  return false;
+}
+
+// Un objeto vacío ({}) significa "nada enviado": se muestra un mensaje
+// claro en vez del JSON vacío, que parece un error de render.
+function pretty(value: unknown, emptyLabel: string): string {
+  if (isEmpty(value)) return emptyLabel;
   if (typeof value === 'string') return value;
   try {
     return JSON.stringify(value, null, 2);
@@ -13,9 +24,9 @@ function pretty(value: unknown): string {
 }
 
 function statusClass(trace: HttpTraceType): string {
-  if (!trace.ok) return 'trace-badge trace-badge--err';
-  if (trace.status !== undefined && trace.status >= 400) return 'trace-badge trace-badge--err';
-  return 'trace-badge trace-badge--ok';
+  if (!trace.ok) return `${styles.badge} ${styles.badgeErr}`;
+  if (trace.status !== undefined && trace.status >= 400) return `${styles.badge} ${styles.badgeErr}`;
+  return `${styles.badge} ${styles.badgeOk}`;
 }
 
 export function HttpTracePanel(): React.JSX.Element {
@@ -25,8 +36,8 @@ export function HttpTracePanel(): React.JSX.Element {
   const ordered = [...state.traces].reverse();
 
   return (
-    <div className="trace-panel">
-      <div className="trace-panel__head">
+    <div className={styles.panel}>
+      <div className={styles.head}>
         <strong>Peticiones ({state.traces.length})</strong>
         <div>
           <button type="button" onClick={() => httpTraceListPloc.clear()}>
@@ -37,27 +48,27 @@ export function HttpTracePanel(): React.JSX.Element {
           </button>
         </div>
       </div>
-      <ul className="trace-list">
+      <ul className={styles.list}>
         {ordered.map((t) => (
           <li key={t.id}>
             <button
               type="button"
-              className={t.id === state.selectedId ? 'trace-item trace-item--active' : 'trace-item'}
+              className={t.id === state.selectedId ? `${styles.item} ${styles.itemActive}` : styles.item}
               onClick={() => httpTraceListPloc.select(t.id === state.selectedId ? null : t.id)}
             >
-              <span className="trace-method">{t.method}</span>
-              <span className="trace-url" title={t.url}>
+              <span className={styles.method}>{t.method}</span>
+              <span className={styles.url} title={t.url}>
                 {t.url}
               </span>
               <span className={statusClass(t)}>{t.status ?? 'ERR'}</span>
-              <span className="trace-ms">{t.ms}ms</span>
+              <span className={styles.ms}>{t.ms}ms</span>
             </button>
           </li>
         ))}
-        {ordered.length === 0 && <li className="trace-empty">Sin peticiones todavía.</li>}
+        {ordered.length === 0 && <li className={styles.empty}>Sin peticiones todavía.</li>}
       </ul>
       {selected && (
-        <div className="trace-detail">
+        <div className={styles.detail}>
           <h3>
             {selected.method} {selected.url}
           </h3>
@@ -66,11 +77,11 @@ export function HttpTracePanel(): React.JSX.Element {
             {selected.at}
           </p>
           <h4>Cabeceras enviadas</h4>
-          <pre>{pretty(selected.reqHeaders)}</pre>
+          <pre className={styles.detailPre}>{pretty(selected.reqHeaders, 'Sin cabeceras.')}</pre>
           <h4>Cuerpo enviado</h4>
-          <pre>{pretty(selected.reqBody)}</pre>
+          <pre className={styles.detailPre}>{pretty(selected.reqBody, 'Sin cuerpo.')}</pre>
           <h4>Respuesta</h4>
-          <pre>{pretty(selected.resBody)}</pre>
+          <pre className={styles.detailPre}>{pretty(selected.resBody, 'Sin respuesta.')}</pre>
         </div>
       )}
     </div>

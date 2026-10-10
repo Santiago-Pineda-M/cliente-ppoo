@@ -1,11 +1,15 @@
 // Entidad transversal: sesión de autenticación (JWT + API key por sesión).
+// El usuario refleja CurrentUserOutputDto de GET /users/me
+// (la API no devuelve email: se identifica por login).
 
 import type { ApiErrorType, ResultType } from '@/Domain/IPatterns';
 
 export type SessionUserType = {
   id: string;
-  email: string;
-  name?: string;
+  login: string;
+  nombres: string;
+  apellidos: string;
+  role: string;
 };
 
 export type SessionPropsType = {
@@ -24,6 +28,16 @@ export type SessionItemType = {
 
 function err(message: string): ResultType<never, ApiErrorType> {
   return { ok: false, error: { kind: 'parse', message } };
+}
+
+function cleanUser(user: SessionUserType): SessionUserType {
+  return {
+    id: user.id.trim(),
+    login: user.login.trim(),
+    nombres: user.nombres.trim(),
+    apellidos: user.apellidos.trim(),
+    role: user.role.trim(),
+  };
 }
 
 export class SessionEntity {
@@ -48,7 +62,7 @@ export class SessionEntity {
     if (!(props.expiresAt instanceof Date) || Number.isNaN(props.expiresAt.getTime())) {
       return err('Expiración inválida');
     }
-    if (!props.user?.id?.trim() || !props.user?.email?.trim()) {
+    if (!props.user?.id?.trim() || !props.user?.login?.trim()) {
       return err('Usuario de sesión inválido');
     }
     return {
@@ -58,7 +72,13 @@ export class SessionEntity {
         refreshToken: props.refreshToken.trim(),
         apiKey: props.apiKey.trim(),
         expiresAt: props.expiresAt,
-        user: { id: props.user.id.trim(), email: props.user.email.trim(), ...(props.user.name !== undefined ? { name: props.user.name } : {}) },
+        user: cleanUser({
+          id: props.user.id,
+          login: props.user.login,
+          nombres: props.user.nombres ?? '',
+          apellidos: props.user.apellidos ?? '',
+          role: props.user.role ?? 'Member',
+        }),
       }),
     };
   }
@@ -72,8 +92,10 @@ export class SessionEntity {
       expiresAt: new Date(String(data.expiresAt ?? '')),
       user: {
         id: String(user?.id ?? ''),
-        email: String(user?.email ?? ''),
-        ...(typeof user?.name === 'string' ? { name: user.name } : {}),
+        login: String(user?.login ?? ''),
+        nombres: typeof user?.nombres === 'string' ? user.nombres : '',
+        apellidos: typeof user?.apellidos === 'string' ? user.apellidos : '',
+        role: typeof user?.role === 'string' ? user.role : 'Member',
       },
     });
   }
@@ -96,6 +118,11 @@ export class SessionEntity {
 
   get user(): SessionUserType {
     return { ...this._user };
+  }
+
+  get displayName(): string {
+    const full = `${this._user.nombres} ${this._user.apellidos}`.trim();
+    return full || this._user.login;
   }
 
   isExpired(now: Date = new Date()): boolean {

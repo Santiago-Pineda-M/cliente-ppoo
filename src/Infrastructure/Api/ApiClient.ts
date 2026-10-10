@@ -5,8 +5,11 @@ import type { ApiErrorType, ResultType } from '@/Domain';
 import type { HttpTraceInputType, TraceSinkType } from '@/Domain/States/http-trace.states';
 
 export type ApiRequestOptionsType = {
-  // false = ruta pública (login/refresh): sin headers auth ni refresh ante 401.
+  // false = ruta pública (login/refresh/bootstrap/consultas): sin headers auth ni refresh ante 401.
   auth?: boolean;
+  // Headers explícitos (ej: login usa el par recién obtenido sin pasar por el store).
+  // Tienen prioridad sobre el provider de auth.
+  headers?: Record<string, string>;
 };
 
 export type AuthHeaderProviderType = () => { access: string | null; apiKey: string | null };
@@ -42,6 +45,20 @@ function snapshotHeaders(headers: Headers): Record<string, string> {
     out[key] = SENSITIVE_HEADERS.has(key.toLowerCase()) ? MASKED : value;
   });
   return out;
+}
+
+// La API responde errores como application/problem+json:
+// { status, code, message, errors, traceId }.
+function problemMessage(payload: unknown, fallback: string): string {
+  if (typeof payload === 'object' && payload !== null) {
+    const record = payload as Record<string, unknown>;
+    const message = record.message;
+    const code = record.code;
+    if (typeof message === 'string' && message.trim()) {
+      return typeof code === 'string' && code.trim() ? `${message} [${code}]` : message;
+    }
+  }
+  return fallback;
 }
 
 export class ApiClient {
@@ -97,17 +114,62 @@ export class ApiClient {
 
     const send = async (): Promise<{ res: Response; sentHeaders: Record<string, string> }> => {
       const headers = new Headers(init?.headers);
+      if (opts?.headers) {
+        for (const [key, value] of Object.entries(opts.headers)) headers.set(key, value);
+      }
       headers.set('Content-Type', 'application/json');
-      if (withAuth) {
-        const creds = this.authHeaderProvider?.();
-        if (creds?.access) headers.set('Authorization', `Bearer ${creds.access}`);
-        if (creds?.apiKey) headers.set('X-API-Key', creds.apiKey);
+      if (withAuth && !headers.has('Authorization')) {
+        const access = this.authHeaderProvider?.()?.access;
+        if (access) headers.set('Authorization', `Bearer ${access}`);
+      }
+      if (withAuth && !headers.has('X-API-Key')) {
+        const apiKey = this.authHeaderProvider?.()?.apiKey;
+        if (apiKey) headers.set('X-API-Key', apiKey);
       }
       const res = await fetch(url, { ...init, headers });
       return { res, sentHeaders: snapshotHeaders(headers) };
     };
 
     const traceBase = { method, url, reqBody, at };
+
+    // Lee el cuerpo una sola vez: sirve para el dato (2xx) y para el
+    // mensaje problem+json (4xx/5xx). 204 NoContent no trae cuerpo.
+    const read = async (
+      sent: { res: Response; sentHeaders: Record<string, string> },
+    ): Promise<ResultType<T>> => {
+      const { res, sentHeaders } = sent;
+      if (res.status === 204) {
+        this.emit({ ...traceBase, reqHeaders: sentHeaders, status: 204, resBody: null, ms: performance.now() - started, ok: true });
+        return { ok: true, value: undefined as T };
+      }
+      let payload: unknown = null;
+      try {
+        payload = (await res.json()) as unknown;
+      } catch {
+        payload = null;
+      }
+      if (res.status === 401 || res.status === 403) {
+        this.emit({ ...traceBase, reqHeaders: sentHeaders, status: res.status, resBody: truncate(payload), ms: performance.now() - started, ok: false });
+        return { ok: false, error: { kind: 'auth', status: res.status, message: problemMessage(payload, 'No autorizado') } };
+      }
+      if (!res.ok) {
+        this.emit({ ...traceBase, reqHeaders: sentHeaders, status: res.status, resBody: truncate(payload), ms: performance.now() - started, ok: false });
+        return { ok: false, error: { kind: 'http', status: res.status, message: problemMessage(payload, `Error HTTP ${res.status}`) } };
+      }
+      if (payload === null) {
+        this.emit({ ...traceBase, reqHeaders: sentHeaders, status: res.status, resBody: null, ms: performance.now() - started, ok: false });
+        return { ok: false, error: { kind: 'parse', message: 'Respuesta vacía o inválida' } };
+      }
+      this.emit({
+        ...traceBase,
+        reqHeaders: sentHeaders,
+        status: res.status,
+        resBody: truncate(payload),
+        ms: performance.now() - started,
+        ok: true,
+      });
+      return { ok: true, value: payload as T };
+    };
 
     let sent: { res: Response; sentHeaders: Record<string, string> };
     try {
@@ -133,33 +195,7 @@ export class ApiClient {
       }
     }
 
-    if (sent.res.status === 401 || sent.res.status === 403) {
-      this.emit({ ...traceBase, reqHeaders: sent.sentHeaders, status: sent.res.status, resBody: null, ms: performance.now() - started, ok: false });
-      return { ok: false, error: { kind: 'auth', status: sent.res.status, message: 'No autorizado' } };
-    }
-
-    if (!sent.res.ok) {
-      this.emit({ ...traceBase, reqHeaders: sent.sentHeaders, status: sent.res.status, resBody: null, ms: performance.now() - started, ok: false });
-      return { ok: false, error: { kind: 'http', status: sent.res.status, message: `Error HTTP ${sent.res.status}` } };
-    }
-
-    let data: T;
-    try {
-      data = (await sent.res.json()) as T;
-    } catch {
-      this.emit({ ...traceBase, reqHeaders: sent.sentHeaders, status: sent.res.status, resBody: null, ms: performance.now() - started, ok: false });
-      return { ok: false, error: { kind: 'parse', message: 'Respuesta inválida' } };
-    }
-
-    this.emit({
-      ...traceBase,
-      reqHeaders: sent.sentHeaders,
-      status: sent.res.status,
-      resBody: truncate(data),
-      ms: performance.now() - started,
-      ok: true,
-    });
-    return { ok: true, value: data };
+    return read(sent);
   }
 
   get<T>(path: string, opts?: ApiRequestOptionsType): Promise<ResultType<T>> {

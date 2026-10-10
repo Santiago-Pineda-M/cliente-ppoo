@@ -5,10 +5,13 @@ import type { IAuthApiService } from '@/Application/Services/IAuthApiService';
 import { LoginUseCase } from '@/Application/UseCases/Auth/LoginUseCase';
 import { RefreshSessionUseCase } from '@/Application/UseCases/Auth/RefreshSessionUseCase';
 import { LogoutUseCase } from '@/Application/UseCases/Auth/LogoutUseCase';
+import { ChangePasswordUseCase } from '@/Application/UseCases/Auth/ChangePassword/ChangePasswordUseCase';
+import { RevokeTokenUseCase } from '@/Application/UseCases/Auth/RevokeToken/RevokeTokenUseCase';
 import { AuthPloc } from '@/Controllers/Auth/AuthPloc';
 import { SessionStoreService } from '@/Infrastructure/Services/SessionStoreService';
 import { AuthApiService } from '@/Infrastructure/Api/Auth/AuthApiService';
 import { getApiClient } from './api.module';
+import { getUserProfileApiService } from './users.module';
 
 // ── Session store (singleton) ──
 let sessionStore: ISessionStoreService | null = null;
@@ -27,7 +30,7 @@ export function getAuthApiService(): IAuthApiService {
 // ── Use cases (singletons) ──
 let loginUC: LoginUseCase | null = null;
 function getLoginUseCase(): LoginUseCase {
-  if (!loginUC) loginUC = new LoginUseCase(getAuthApiService(), getSessionStore());
+  if (!loginUC) loginUC = new LoginUseCase(getAuthApiService(), getUserProfileApiService(), getSessionStore());
   return loginUC;
 }
 
@@ -38,9 +41,21 @@ function getRefreshSessionUseCase(): RefreshSessionUseCase {
 }
 
 let logoutUC: LogoutUseCase | null = null;
-function getLogoutUseCase(): LogoutUseCase {
-  if (!logoutUC) logoutUC = new LogoutUseCase(getSessionStore());
+export function getLogoutUseCase(): LogoutUseCase {
+  if (!logoutUC) logoutUC = new LogoutUseCase(getAuthApiService(), getSessionStore());
   return logoutUC;
+}
+
+let changePasswordUC: ChangePasswordUseCase | null = null;
+function getChangePasswordUseCase(): ChangePasswordUseCase {
+  if (!changePasswordUC) changePasswordUC = new ChangePasswordUseCase(getAuthApiService(), getSessionStore());
+  return changePasswordUC;
+}
+
+let revokeTokenUC: RevokeTokenUseCase | null = null;
+function getRevokeTokenUseCase(): RevokeTokenUseCase {
+  if (!revokeTokenUC) revokeTokenUC = new RevokeTokenUseCase(getAuthApiService());
+  return revokeTokenUC;
 }
 
 // ── PLOC (singleton) ──
@@ -48,7 +63,14 @@ let authPloc: AuthPloc | null = null;
 export function getAuthPloc(): AuthPloc {
   wireApiClient();
   if (!authPloc) {
-    authPloc = new AuthPloc(getLoginUseCase(), getRefreshSessionUseCase(), getLogoutUseCase(), getSessionStore());
+    authPloc = new AuthPloc(
+      getLoginUseCase(),
+      getRefreshSessionUseCase(),
+      getLogoutUseCase(),
+      getChangePasswordUseCase(),
+      getRevokeTokenUseCase(),
+      getSessionStore(),
+    );
   }
   return authPloc;
 }

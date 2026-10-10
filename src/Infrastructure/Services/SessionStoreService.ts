@@ -12,7 +12,7 @@ type StoredSessionType = {
   refreshToken: string;
   apiKey: string;
   expiresAt: string;
-  user: { id: string; email: string; name?: string };
+  user: { id: string; login: string; nombres: string; apellidos: string; role: string };
 };
 
 function readStorage(): ResultType<StoredSessionType | null> {

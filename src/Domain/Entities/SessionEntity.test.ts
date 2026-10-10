@@ -6,7 +6,7 @@ const base: SessionPropsType = {
   refreshToken: 'refresh-123',
   apiKey: 'key-123',
   expiresAt: new Date(Date.now() + 60_000),
-  user: { id: 'u1', email: 'a@b.c' },
+  user: { id: 'p1', login: 'jperez', nombres: 'Juan', apellidos: 'Pérez', role: 'Member' },
 };
 
 describe('SessionEntity', () => {
@@ -15,19 +15,21 @@ describe('SessionEntity', () => {
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.value.isExpired()).toBe(false);
+      expect(r.value.displayName).toBe('Juan Pérez');
       // toItem nunca expone tokens
       expect(r.value.toItem()).toEqual({
         isAuthenticated: true,
-        user: { id: 'u1', email: 'a@b.c' },
+        user: { id: 'p1', login: 'jperez', nombres: 'Juan', apellidos: 'Pérez', role: 'Member' },
         expiresAt: r.value.expiresAt.toISOString(),
       });
     }
   });
 
-  it('rechaza sin tokens', () => {
+  it('rechaza sin tokens ni usuario', () => {
     expect(SessionEntity.create({ ...base, accessToken: '' }).ok).toBe(false);
     expect(SessionEntity.create({ ...base, refreshToken: '' }).ok).toBe(false);
     expect(SessionEntity.create({ ...base, apiKey: '  ' }).ok).toBe(false);
+    expect(SessionEntity.create({ ...base, user: { ...base.user, login: '' } }).ok).toBe(false);
   });
 
   it('detecta expiración', () => {
@@ -42,9 +44,9 @@ describe('SessionEntity', () => {
       refreshToken: 'r',
       apiKey: 'k',
       expiresAt: new Date(Date.now() + 1000).toISOString(),
-      user: { id: 'u1', email: 'a@b.c', name: 'Ana' },
+      user: { id: 'p1', login: 'jperez', nombres: 'Juan', apellidos: 'Pérez', role: 'Administrator' },
     });
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.value.user).toEqual({ id: 'u1', email: 'a@b.c', name: 'Ana' });
+    if (r.ok) expect(r.value.user).toEqual({ id: 'p1', login: 'jperez', nombres: 'Juan', apellidos: 'Pérez', role: 'Administrator' });
   });
 });

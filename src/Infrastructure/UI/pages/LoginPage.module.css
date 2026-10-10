@@ -1,0 +1,6 @@
+/* Composición de la página de acceso: centra la tarjeta. */
+.page {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4) 0 var(--space-8);
+}

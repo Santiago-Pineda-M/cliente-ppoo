@@ -1,0 +1,15 @@
+.header {
+  margin: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+
+.meta {
+  margin: var(--space-1) 0 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  text-transform: capitalize;
+}

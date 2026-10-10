@@ -1,24 +1,31 @@
 // Servicio API del recurso auth. Dueño de la ruta (basePath único).
-// Rutas públicas: auth:false (sin headers ni refresh).
+// Login/refresh son públicos (auth:false); el resto exige JWT.
+// La API habla camelCase en JSON: el mapeo vive solo aquí.
 
 import type { ResultType } from '@/Domain';
-import { SessionEntity } from '@/Domain/Entities/SessionEntity';
 import type {
-  AuthSessionDtoType,
+  AuthTokenPairType,
+  ChangePasswordCommandType,
   IAuthApiService,
   LoginCommandType,
+  LogoutCommandType,
   RefreshSessionCommandType,
+  RevokeTokenCommandType,
 } from '@/Application/Services/IAuthApiService';
 import type { ApiClient } from '@/Infrastructure/Api/ApiClient';
+import { isoDate, parseErr, val, vstr } from '@/Infrastructure/Api/api-helpers';
 
-function toEntity(dto: AuthSessionDtoType): ResultType<SessionEntity> {
-  return SessionEntity.create({
-    accessToken: dto.accessToken,
-    refreshToken: dto.refreshToken,
-    apiKey: dto.apiKey,
-    expiresAt: new Date(Date.now() + dto.expiresIn * 1000),
-    user: dto.user,
-  });
+type TokenPairDtoType = Record<string, unknown>;
+
+function toPair(dto: TokenPairDtoType): ResultType<AuthTokenPairType> {
+  const accessToken = vstr(dto, 'accessToken');
+  const refreshToken = vstr(dto, 'refreshToken');
+  const apiKey = vstr(dto, 'apiKey');
+  const expiresAt = isoDate(val(dto, 'accessTokenExpiresAtUtc'));
+  if (!accessToken || !refreshToken || !apiKey || !expiresAt) {
+    return parseErr<AuthTokenPairType>('Par de tokens inválido');
+  }
+  return { ok: true, value: { accessToken, refreshToken, apiKey, expiresAt } };
 }
 
 export class AuthApiService implements IAuthApiService {
@@ -27,23 +34,50 @@ export class AuthApiService implements IAuthApiService {
     private readonly basePath = '/auth',
   ) {}
 
-  async login(cmd: LoginCommandType): Promise<ResultType<SessionEntity>> {
-    const res = await this.api.post<AuthSessionDtoType>(
+  async login(cmd: LoginCommandType): Promise<ResultType<AuthTokenPairType>> {
+    const res = await this.api.post<TokenPairDtoType>(
       `${this.basePath}/login`,
-      { identifier: cmd.identifier, password: cmd.password },
+      { login: cmd.login, password: cmd.password },
       { auth: false },
     );
     if (!res.ok) return res;
-    return toEntity(res.value);
+    return toPair(res.value);
   }
 
-  async refresh(cmd: RefreshSessionCommandType): Promise<ResultType<SessionEntity>> {
-    const res = await this.api.post<AuthSessionDtoType>(
+  async refresh(cmd: RefreshSessionCommandType): Promise<ResultType<AuthTokenPairType>> {
+    const res = await this.api.post<TokenPairDtoType>(
       `${this.basePath}/refresh`,
-      { refreshToken: cmd.refreshToken, apiKey: cmd.apiKey },
+      { refreshToken: cmd.refreshToken },
       { auth: false },
     );
     if (!res.ok) return res;
-    return toEntity(res.value);
+    return toPair(res.value);
+  }
+
+  async logout(cmd: LogoutCommandType): Promise<ResultType<void>> {
+    const res = await this.api.post<unknown>(
+      `${this.basePath}/logout`,
+      { refreshToken: cmd.refreshToken },
+    );
+    if (!res.ok) return res;
+    return { ok: true, value: undefined };
+  }
+
+  async revokeToken(cmd: RevokeTokenCommandType): Promise<ResultType<void>> {
+    const res = await this.api.post<unknown>(
+      `${this.basePath}/revoke-token`,
+      { personaId: cmd.personaId, refreshToken: cmd.refreshToken },
+    );
+    if (!res.ok) return res;
+    return { ok: true, value: undefined };
+  }
+
+  async changePassword(cmd: ChangePasswordCommandType): Promise<ResultType<void>> {
+    const res = await this.api.post<unknown>(
+      `${this.basePath}/change-password`,
+      { currentPassword: cmd.currentPassword, newPassword: cmd.newPassword },
+    );
+    if (!res.ok) return res;
+    return { ok: true, value: undefined };
   }
 }

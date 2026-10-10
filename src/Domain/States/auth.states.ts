@@ -7,14 +7,16 @@ export interface IAuthState extends IPlocState {
   user: SessionUserType | null;
   isAuthenticated: boolean;
   isSubmitting: boolean;
-  formData: { identifier: string; password: string };
+  formData: { login: string; password: string };
+  passwordForm: { currentPassword: string; newPassword: string };
 }
 
 export const initialAuthState: IAuthState = {
   user: null,
   isAuthenticated: false,
   isSubmitting: false,
-  formData: { identifier: '', password: '' },
+  formData: { login: '', password: '' },
+  passwordForm: { currentPassword: '', newPassword: '' },
   isLoading: false,
   errors: {},
 };

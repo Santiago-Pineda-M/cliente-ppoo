@@ -41,13 +41,13 @@
   margin-bottom: var(--space-4);
 }
 
-ul {
+.list {
   list-style: disc;
   padding-left: var(--space-4);
   margin: var(--space-2) 0;
 }
 
-li {
+.item {
   font-size: var(--text-sm);
   margin: var(--space-1) 0;
   color: var(--color-text);

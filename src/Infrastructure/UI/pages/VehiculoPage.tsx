@@ -160,9 +160,9 @@ export function VehiculoPage(): React.JSX.Element {
           {s.vehiculo.documentos && s.vehiculo.documentos.length > 0 && (
             <div>
               <h3>Documentos</h3>
-              <ul>
+              <ul className={styles.list}>
                 {s.vehiculo.documentos.map((d) => (
-                  <li key={d.tipoDocumentoId}>
+                  <li className={styles.item} key={d.tipoDocumentoId}>
                     {d.nombreArchivo} — {d.estado}
                   </li>
                 ))}
@@ -172,9 +172,9 @@ export function VehiculoPage(): React.JSX.Element {
           {s.vehiculo.conductores && s.vehiculo.conductores.length > 0 && (
             <div>
               <h3>Conductores asociados</h3>
-              <ul>
+              <ul className={styles.list}>
                 {s.vehiculo.conductores.map((c) => (
-                  <li key={c.personaId}>
+                  <li className={styles.item} key={c.personaId}>
                     {c.nombres} {c.apellidos} — estado {c.estado}
                   </li>
                 ))}

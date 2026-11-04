@@ -23,6 +23,8 @@
   --color-ok-soft: #e8f5e9;
   --color-err: #c62828;
   --color-err-soft: #fdecea;
+  --color-warn: #b45309;
+  --color-warn-soft: #fef3c7;
 
   /* Espaciado — escala base 0.25rem. Solo estos 6 valores. */
   --space-1: 0.25rem;

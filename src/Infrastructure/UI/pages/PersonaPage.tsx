@@ -23,7 +23,7 @@ export function PersonaPage(): React.JSX.Element {
       <h1 className={styles.title}>{s.persona ? 'Persona · Detalle' : 'Persona · Nueva'}</h1>
       {s.createdCredentials && (
         <div className={styles.card}>
-          <p className={styles.label}>Credenciales generadas</p>
+          <p className={styles.fieldLabel}>Credenciales generadas</p>
           <p><strong>Login:</strong> {s.createdCredentials.login}</p>
           <p><strong>API Key:</strong> {s.createdCredentials.apiKey}</p>
           <p><strong>Contraseña generada:</strong> {s.createdCredentials.passwordGenerada}</p>

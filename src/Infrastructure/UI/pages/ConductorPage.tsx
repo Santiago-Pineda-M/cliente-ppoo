@@ -43,9 +43,9 @@ export function ConductorPage(): React.JSX.Element {
         {s.asociaciones.length > 0 && (
           <div>
             <h3>Asociaciones</h3>
-            <ul>
+            <ul className={styles.list}>
               {s.asociaciones.map((a) => (
-                <li key={a.vehiculoId}>
+                <li className={styles.item} key={a.vehiculoId}>
                   Vehículo {a.vehiculoId} — asociado {a.fechaAsociacion} — estado {a.estado}
                 </li>
               ))}

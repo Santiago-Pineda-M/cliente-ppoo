@@ -89,13 +89,13 @@ export function TipoDocumentoPage(): React.JSX.Element {
             disabled={s.isLoading}
           />
         </div>
-        <ul>
+        <ul className={styles.list}>
           {s.items.map((item) => (
-            <li key={item.id} onClick={() => tipoDocumentoListPloc.select(item.id)}>
+            <li className={styles.item} key={item.id} onClick={() => tipoDocumentoListPloc.select(item.id)}>
               <strong>{item.nombre}</strong> ({item.codigo}) — {item.descripcion}
             </li>
           ))}
-          {s.items.length === 0 && <li>Sin tipos de documento</li>}
+          {s.items.length === 0 && <li className={styles.item}>Sin tipos de documento</li>}
         </ul>
       </section>
     </div>

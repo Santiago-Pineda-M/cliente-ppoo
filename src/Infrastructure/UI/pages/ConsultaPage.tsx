@@ -35,13 +35,13 @@ export function ConsultaPage(): React.JSX.Element {
             disabled={s.isLoading}
           />
         </div>
-        <ul>
+        <ul className={styles.list}>
           {s.operables.map((o) => (
-            <li key={o.personaId}>
+            <li className={styles.item} key={o.personaId}>
               {o.nombres} {o.apellidos} — vehículo {o.vehiculoId ?? '—'}
             </li>
           ))}
-          {s.operables.length === 0 && <li>Sin resultados</li>}
+          {s.operables.length === 0 && <li className={styles.item}>Sin resultados</li>}
         </ul>
       </section>
 
@@ -63,13 +63,13 @@ export function ConsultaPage(): React.JSX.Element {
             disabled={s.isLoading}
           />
         </div>
-        <ul>
+        <ul className={styles.list}>
           {s.porVencer.map((d) => (
-            <li key={`${d.vehiculoId}-${d.tipoDocumentoId}`}>
+            <li className={styles.item} key={`${d.vehiculoId}-${d.tipoDocumentoId}`}>
               Vehículo {d.vehiculoId} — documento {d.tipoDocumentoId} — vence {d.fechaVencimiento} — {d.estado}
             </li>
           ))}
-          {s.porVencer.length === 0 && <li>Sin resultados</li>}
+          {s.porVencer.length === 0 && <li className={styles.item}>Sin resultados</li>}
         </ul>
       </section>
 
@@ -84,13 +84,13 @@ export function ConsultaPage(): React.JSX.Element {
             disabled={s.isLoading}
           />
         </div>
-        <ul>
+        <ul className={styles.list}>
           {s.vencidos.map((d) => (
-            <li key={`${d.vehiculoId}-${d.tipoDocumentoId}`}>
+            <li className={styles.item} key={`${d.vehiculoId}-${d.tipoDocumentoId}`}>
               Vehículo {d.vehiculoId} — documento {d.tipoDocumentoId} — vencido {d.fechaVencimiento} — {d.estado}
             </li>
           ))}
-          {s.vencidos.length === 0 && <li>Sin resultados</li>}
+          {s.vencidos.length === 0 && <li className={styles.item}>Sin resultados</li>}
         </ul>
       </section>
 
@@ -105,13 +105,13 @@ export function ConsultaPage(): React.JSX.Element {
             disabled={s.isLoading}
           />
         </div>
-        <ul>
+        <ul className={styles.list}>
           {s.conteo.map((c) => (
-            <li key={c.tipo}>
+            <li className={styles.item} key={c.tipo}>
               Tipo {c.tipo}: {c.cantidad} persona(s)
             </li>
           ))}
-          {s.conteo.length === 0 && <li>Sin resultados</li>}
+          {s.conteo.length === 0 && <li className={styles.item}>Sin resultados</li>}
         </ul>
       </section>
     </div>

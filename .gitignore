@@ -8,9 +8,17 @@ dist/
 dist-ssr/
 *.local
 
-# Env (no versionar valores reales; sí .env.example)
+# Entorno: nunca versionar valores reales; sí .env.example
 .env
-.env.*.local
+.env.*
+!.env.example
+
+# Secretos y certificados
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
 
 # Tests / cobertura
 coverage/

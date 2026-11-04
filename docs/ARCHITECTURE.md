@@ -7,6 +7,9 @@ proyecto ejemplo con `src/Domain|Application|Controllers|Infrastructure`.
 NO hay repositorios: son para persistencia local y aquí no hay. Todo acceso a
 datos remotos es vía **servicios API por entidad**.
 
+Para añadir código sigue [`ADDING_FEATURES.md`](ADDING_FEATURES.md); para el
+modelo de seguridad, [`SECURITY.md`](SECURITY.md).
+
 ## Capas y dirección de dependencias
 
 Estrictamente unidireccional, nunca se invierte:
@@ -31,7 +34,9 @@ src/Infrastructure         (ApiClient fetch, XxxApiService por entidad, services
     `type XxxCommandType = {...}` junto al UC.
   - `Services/I<Xxx>ApiService.ts`. Ports de datos remotos, un port por
     entidad/recurso REST (`list|getById|create|update|remove` según la API).
-  - `Services/<Xxx>Service.ts` + `I<Xxx>Service.ts`. Servicios de aplicación.
+  - `Services/I<Xxx>Service.ts`: puertos de servicios de aplicación (p. ej.
+    `IHttpTraceService`). La implementación con IO vive en
+    `Infrastructure/Services/` (`SessionStoreService`, `HttpTraceService`).
     `Services/External/`: envoltorios de librerías, en carpeta aparte.
 - **`src/Controllers`** — `<Agregado>/<Agregado><Rol>Ploc.ts`
   (`List|Detail|CreateForm|EditForm|Delete`). Extiende `Ploc<State>`, expone

@@ -4,6 +4,11 @@ Cliente web de la API. React + TypeScript (Vite) + Clean Architecture de 4 capas
 (Domain, Application, Controllers, Infrastructure). Mensajes de UI y commits en español.
 Documentación de referencia en `docs/`.
 
+**Antes de implementar cualquier funcionalidad, lee y sigue
+[`docs/ADDING_FEATURES.md`](docs/ADDING_FEATURES.md)** (checklist, recetas por
+tipo de cambio, plantillas y verificación). Reglas de seguridad en
+[`docs/SECURITY.md`](docs/SECURITY.md).
+
 ## Package manager: pnpm SOLO
 
 Nunca npm, yarn, bun ni `npx`.
@@ -48,6 +53,26 @@ UI (Infrastructure/UI, React)
 - Auth JWT (access+refresh) + API key por sesión en `localStorage` SOLO vía
   `SessionStoreService`. Refresh con cola single-flight en `ApiClient`.
 - UI consume PLOCs vía `useDependencies() + usePlocState()`, nunca ApiServices ni
-  `ApiClient` directo. `VITE_API_URL` solo se lee en `DI/modules/api.module.ts`.
+  `ApiClient` directo. `import.meta.env` solo se lee en
+  `src/Infrastructure/DI/modules/config.module.ts` (el resto usa `getAppConfig()`).
+
+## Tests
+
+- Los tests viven junto al código: `*.test.ts` / `*.test.tsx` (`vitest.config.ts`).
+- Cada funcionalidad nueva lleva al menos un test unitario del PLOC o del
+  `XxxApiService` (doble de `ApiClient`, sin red).
+- No se mockea `ApiClient` con `fetch` real: usa `vi.stubGlobal('fetch', ...)`
+  solo en tests del propio `ApiClient`.
+- La integración contra la API va en `tests/integration/` con su propio config y
+  `describe.skipIf(!process.env.API_URL)`; nunca en `pnpm test:run`.
+- No commitees con `pnpm lint`, `pnpm typecheck` o `pnpm test:run` en rojo.
+
+## Entorno y seguridad
+
+- `.env` no se versiona; solo `.env.example`. Nunca añadas secretos reales.
+- `VITE_*` es público (Vite lo incrusta en el bundle): no metas tokens ni API keys.
+- Sin `dangerouslySetInnerHTML`; no loguees credenciales ni cuerpos sensibles.
+- Antes de publicar: `VITE_HTTP_TRACE=false`.
 
 Detalle en `docs/ARCHITECTURE.md`. Decisiones en `docs/ARCHITECTURE_DECISIONS.md`.
+Procedimiento en `docs/ADDING_FEATURES.md`.

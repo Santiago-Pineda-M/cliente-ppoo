@@ -44,12 +44,18 @@ describe('SideNav', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('marca Tablero activo y el resto como Pronto', () => {
+  it('marca Inicio activo y muestra todos los ítems de negocio con enlace', () => {
     stubPloc(authedState);
     render(<SideNav />);
-    expect(screen.getByRole('link', { name: 'Tablero' }).getAttribute('aria-current')).toBe('page');
-    expect(screen.getAllByText('Pronto')).toHaveLength(5);
+    expect(screen.getByRole('link', { name: 'Inicio' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.queryAllByText('Pronto')).toHaveLength(0);
     expect(screen.getByText('adm')).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Personas' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Vehículos' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Conductores' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Consultas' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Tipos de documento' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Usuarios' })).toBeDefined();
   });
 
   it('cierra sesión desde el pie', () => {

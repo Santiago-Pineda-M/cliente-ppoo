@@ -1,3 +1,9 @@
 export { BootstrapPage } from './BootstrapPage';
+export { ConsultaPage } from './ConsultaPage';
+export { ConductorPage } from './ConductorPage';
 export { HomePage } from './HomePage';
 export { LoginPage } from './LoginPage';
+export { PersonaPage } from './PersonaPage';
+export { TipoDocumentoPage } from './TipoDocumentoPage';
+export { UsuarioPage } from './UsuarioPage';
+export { VehiculoPage } from './VehiculoPage';

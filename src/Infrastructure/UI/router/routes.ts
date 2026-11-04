@@ -3,10 +3,17 @@
 // efectiva y la redirección. La seguridad real la aplica la API (401/403);
 // el router solo decide QUÉ mostrar y a DÓNDE mandar si una ruta no es accesible.
 //
-// Rutas actuales: home (privada, sesión) · login (invitados) · bootstrap (pública).
-// Las pantallas de negocio futuras se agregan aquí con política 'auth' y quedan
-// protegidas automáticamente, sin tocar componentes.
-export type AppRouteType = 'home' | 'login' | 'bootstrap';
+// Rutas: home (privada) · login (invitados) · bootstrap (pública) · rutas de negocio (privadas).
+export type AppRouteType =
+  | 'home'
+  | 'login'
+  | 'bootstrap'
+  | 'personas'
+  | 'vehiculos'
+  | 'conductores'
+  | 'consultas'
+  | 'tipos-documento'
+  | 'usuarios';
 
 // guest = rebota a home con sesión · public = siempre visible · auth = solo con sesión.
 export type RoutePolicyType = 'guest' | 'public' | 'auth';
@@ -22,19 +29,64 @@ export const ROUTES: Record<AppRouteType, RouteDefinitionType> = {
   home: { hash: '#/', policy: 'auth' },
   login: { hash: '#/login', policy: 'guest' },
   bootstrap: { hash: '#/bootstrap', policy: 'public' },
+  personas: { hash: '#/personas', policy: 'auth' },
+  vehiculos: { hash: '#/vehiculos', policy: 'auth' },
+  conductores: { hash: '#/conductores', policy: 'auth' },
+  consultas: { hash: '#/consultas', policy: 'auth' },
+  'tipos-documento': { hash: '#/tipos-documento', policy: 'auth' },
+  usuarios: { hash: '#/usuarios', policy: 'auth' },
 };
 
 export const ROUTE_POLICIES: Record<AppRouteType, RoutePolicyType> = {
   home: ROUTES.home.policy,
   login: ROUTES.login.policy,
   bootstrap: ROUTES.bootstrap.policy,
+  personas: ROUTES.personas.policy,
+  vehiculos: ROUTES.vehiculos.policy,
+  conductores: ROUTES.conductores.policy,
+  consultas: ROUTES.consultas.policy,
+  'tipos-documento': ROUTES['tipos-documento'].policy,
+  usuarios: ROUTES.usuarios.policy,
 };
 
 export function getRouteFromHash(hash: string): AppRouteType {
   const clean = hash.replace(/^#/, '').split('?')[0];
-  if (clean === '/bootstrap' || clean === 'bootstrap' || clean === '/bootstrap/') return 'bootstrap';
-  if (clean === '/login' || clean === 'login' || clean === '/login/') return 'login';
-  return 'home';
+  switch (clean) {
+    case '/bootstrap':
+    case 'bootstrap':
+    case '/bootstrap/':
+      return 'bootstrap';
+    case '/login':
+    case 'login':
+    case '/login/':
+      return 'login';
+    case '/personas':
+    case 'personas':
+    case '/personas/':
+      return 'personas';
+    case '/vehiculos':
+    case 'vehiculos':
+    case '/vehiculos/':
+      return 'vehiculos';
+    case '/conductores':
+    case 'conductores':
+    case '/conductores/':
+      return 'conductores';
+    case '/consultas':
+    case 'consultas':
+    case '/consultas/':
+      return 'consultas';
+    case '/tipos-documento':
+    case 'tipos-documento':
+    case '/tipos-documento/':
+      return 'tipos-documento';
+    case '/usuarios':
+    case 'usuarios':
+    case '/usuarios/':
+      return 'usuarios';
+    default:
+      return 'home';
+  }
 }
 
 export function routeToHash(route: AppRouteType): string {

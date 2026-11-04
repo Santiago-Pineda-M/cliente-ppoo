@@ -45,7 +45,17 @@ describe('resolveView', () => {
   });
 
   it('toda ruta declara su política', () => {
-    expect(Object.keys(ROUTE_POLICIES).sort()).toEqual(['bootstrap', 'home', 'login']);
+    expect(Object.keys(ROUTE_POLICIES).sort()).toEqual([
+      'bootstrap',
+      'conductores',
+      'consultas',
+      'home',
+      'login',
+      'personas',
+      'tipos-documento',
+      'usuarios',
+      'vehiculos',
+    ]);
   });
 
   it('una futura ruta auth queda protegida sin tocar componentes', () => {

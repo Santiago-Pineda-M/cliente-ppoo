@@ -17,16 +17,17 @@ interface NavEntryType {
   label: string;
   icon: LucideIcon;
   /** null = módulo futuro: se muestra deshabilitado con badge, sin href roto. */
-  to: '#/' | null;
+  to: string | null;
 }
 
 const ENTRIES: NavEntryType[] = [
-  { label: 'Tablero', icon: LayoutDashboard, to: '#/' },
-  { label: 'Personas', icon: Users, to: null },
-  { label: 'Vehículos', icon: CarFront, to: null },
-  { label: 'Conductores', icon: Truck, to: null },
-  { label: 'Consultas', icon: FileSearch, to: null },
-  { label: 'Documentos', icon: Files, to: null },
+  { label: 'Inicio', icon: LayoutDashboard, to: '#/' },
+  { label: 'Personas', icon: Users, to: '#/personas' },
+  { label: 'Vehículos', icon: CarFront, to: '#/vehiculos' },
+  { label: 'Conductores', icon: Truck, to: '#/conductores' },
+  { label: 'Consultas', icon: FileSearch, to: '#/consultas' },
+  { label: 'Tipos de documento', icon: Files, to: '#/tipos-documento' },
+  { label: 'Usuarios', icon: Users, to: '#/usuarios' },
 ];
 
 // Organismo: navegación lateral. Visible solo con sesión (el layout la monta
